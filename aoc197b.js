@@ -1,10 +1,9 @@
 const input = `3,8,1001,8,10,8,105,1,0,0,21,42,67,88,105,114,195,276,357,438,99999,3,9,101,4,9,9,102,3,9,9,1001,9,2,9,102,4,9,9,4,9,99,3,9,1001,9,4,9,102,4,9,9,101,2,9,9,1002,9,5,9,1001,9,2,9,4,9,99,3,9,1001,9,4,9,1002,9,4,9,101,2,9,9,1002,9,2,9,4,9,99,3,9,101,4,9,9,102,3,9,9,1001,9,5,9,4,9,99,3,9,102,5,9,9,4,9,99,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,101,2,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,101,2,9,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,1001,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,1,9,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,99,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,1001,9,1,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,2,9,4,9,99,3,9,1002,9,2,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,1002,9,2,9,4,9,99`;
-const test = `3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,-5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10`;
+const test = `3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5`;
 
 const getWithMode = (values, value, mode) => mode === 1 ? value : values[value];
 
-const outputFunction2 = (ampOutput) => ({amp, end}) => {
-    console.log(amp);
+const outputFunction2 = ampOutput => amp => {
     ampOutput.push(amp);
 }
 
@@ -15,9 +14,7 @@ const compuper = (values, index, ampNr, inputBuffer, outputFunction) => {
         const opCode = split[3];
 
         if (opCode === 99) {
-            if (ampNr === 4)
-                console.log("YEEEEEEET");
-            else {
+            if (ampNr !== 4) {
                 const nextAmp = amps[(ampNr + 1) % 5];
                 compuper(nextAmp.values, nextAmp.index, nextAmp.ampNr, nextAmp.input, nextAmp.outputFunction);
             }
@@ -67,7 +64,7 @@ const compuper = (values, index, ampNr, inputBuffer, outputFunction) => {
             }
             case 4: {
                 const target = getWithMode(values, values[index + 1], split[2]);
-                outputFunction({amp: target, end: false});
+                outputFunction(target);
                 index += 2;
                 break;
             }
@@ -126,27 +123,57 @@ const amps = [];
 
 const part2 = x => {
     const getValues = () => x.split(',').map(Number);
-    const ampInputs = [
-        [9, 0],
-        [7],
-        [8],
-        [5],
-        [6],
-    ];
+
+    const permutations = permutator([5, 6, 7, 8, 9]);
+    const outputValues = [];
+
+    for (let perm of permutations) {
+        perm = perm.map(x => [x]);
+        perm[0] = [...perm[0], 0];
+
+        const ampInputs = perm;
+        console.log(ampInputs);
+
+        for (let i = 0; i < 5; i++) {
+            amps.push({
+                values: getValues(),
+                index: 0,
+                ampNr: i,
+                input: ampInputs[i],
+                outputFunction: outputFunction2(ampInputs[(i+1) % ampInputs.length]),
+            });
+        }
     
-    for (let i = 0; i < 5; i++) {
-        amps.push({
-            values: getValues(),
-            index: 0,
-            ampNr: i,
-            input: ampInputs[i],
-            outputFunction: outputFunction2(ampInputs[(i+1) % ampInputs.length]),
-        });
+        const start = amps[0];
+    
+        compuper(start.values, start.index, start.ampNr, start.input, start.outputFunction);
+    
+        outputValues.push(amps[0].input[0])
+        amps.length = 0;
     }
 
-    const start = amps[0];
-
-    compuper(start.values, start.index, start.ampNr, start.input, start.outputFunction);
+    return Math.max(...outputValues);
 };
 
-console.log(part2(test));
+//https://stackoverflow.com/a/20871714/6707985
+const permutator = (inputArr) => {
+    let result = [];
+
+    const permute = (arr, m = []) => {
+        if (arr.length === 0) {
+            result.push(m)
+        } else {
+            for (let i = 0; i < arr.length; i++) {
+                let curr = arr.slice();
+                let next = curr.splice(i, 1);
+                permute(curr.slice(), m.concat(next))
+            }
+        }
+    }
+
+    permute(inputArr)
+
+    return result;
+}
+
+console.log(part2(input));
