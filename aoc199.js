@@ -11,9 +11,9 @@ const getWithMode = (values, value, mode, relativeBase) => {
 
 const getTargetWithMode = (values, index, mode, relativeBase) => {
     switch (mode) {
-        case 0: return index;
+        case 0: return values[index];
         case 1: throw "WHY WAS I CREATED THIS WAY?!";
-        case 2: return index + relativeBase;
+        case 2: return values[index] + relativeBase;
         default: return console.log("WHAT IN THE ABSOLUTE FUCK, WHAT?!?!");
     }
 }
@@ -104,4 +104,9 @@ const part1 = x => {
     return compuper(x, 1);
 }
 
+const part2 = x => {
+    return compuper(x, 2);
+}
+
 part1(input);
+part2(input);
