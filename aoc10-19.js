@@ -47,10 +47,10 @@ const mapToGrid = map => map.split(/[\r\n]+/).map(row => row.split("").map(field
 
 const divisors = x => {
     const result = [];
-    for (let i = 2; i < Math.sqrt(x); i++) {
+    for (let i = 2; i < Math.ceil(x / 2); i++) {
         if (x % i === 0) result.push(i);
     }
-
+    result.push(x);
     return result;
 }
 
@@ -68,6 +68,7 @@ const beam = (x, y, offX, offY, grid) => {
     const divOffY = divisors(offY);
     const commonDivisor = divOffX.some(nr => divOffY.indexOf(nr) > -1);
     const notDivisible = oneInvolved || !commonDivisor; //If they share a common divisor, the path they trace was already traced by smaller offsets before (I think) so we can ignore this.
+    const notDivisibleBetter = oneInvolved || (offX % offY !== 0 && offY % offX !== 0); //Appears to be more correct when looking at the output. Replace notDivisible with this to see the difference
     const notEqual = offX !== offY;
 
     /* 
@@ -75,7 +76,7 @@ const beam = (x, y, offX, offY, grid) => {
      * The values are both 1 or -1 OR
      * They do NOT share a common divisor AND are NOT equal
      */
-    if (onePair || (notDivisible && notEqual)) {
+    if (onePair || (notDivisibleBetter && notEqual)) {
         //While we are within the bounds of the map
         while ((x >= 0 && x < grid.length) && (y >= 0 && y < grid[x].length)) {
             //Increase the checked coordinates by the given offsets
@@ -142,4 +143,4 @@ const part1 = x => {
     return cMax;
 }
 
-console.log(part1(test2));
+console.log(part1(test));
