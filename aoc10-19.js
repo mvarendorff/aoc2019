@@ -43,11 +43,32 @@ const test2 = `......#.#.
 ##...#..#.
 .#....####`;
 
+const test3 = `.#..##.###...#######
+##.############..##.
+.#.######.########.#
+.###.#######.####.#.
+#####.##.#.##.###.##
+..#####..#.#########
+####################
+#.####....###.#.#.##
+##.#################
+#####.##.###..####..
+..######..##.#######
+####.##.####...##..#
+.#####..#.######.###
+##...#.##########...
+#.##########.#######
+.####.#.###.###.#.##
+....##.##.###..#####
+.#.#.###########.###
+#.#.#.#####.####.###
+###.##.####.##.#..##`;
+
 const mapToGrid = map => map.split(/[\r\n]+/).map(row => row.split("").map(field => field === '#'));
 
 const divisors = x => {
     const result = [];
-    for (let i = 2; i < Math.ceil(x / 2); i++) {
+    for (let i = 2; i <= Math.ceil(x / 2); i++) {
         if (x % i === 0) result.push(i);
     }
     result.push(x);
@@ -56,27 +77,26 @@ const divisors = x => {
 
 //Runs a beam from x/y in the direction of offX and offY
 const beam = (x, y, offX, offY, grid) => {
-    if (Math.abs(offX) === 0 && Math.abs(offY) === 0) return false; //0 offsets make no sense. We don't track our own asteroid so false.
+    if (Math.abs(offX) === 0 && Math.abs(offY) === 0) return {hit: false}; //0 offsets make no sense. We don't track our own asteroid so false.
     
-    const inX = x;
-    const inY = y;
-
     const onePair = Math.abs(offX) === 1 && Math.abs(offY) === 1; // If both are 1 or -1, they are allowed to be equal; this has to be an extra check
     const oneInvolved = Math.abs(offX) === 1 || Math.abs(offY) === 1; // If there is a one involved (and some other number) the offsets are divisible but that should be ignored in this case
-    
-    const divOffX = divisors(offX);
-    const divOffY = divisors(offY);
+    const zeroInvolved = offX === 0 || offY === 0;
+
+    if (zeroInvolved && !oneInvolved) return {hit: false};
+
+    const divOffX = divisors(Math.abs(offX));
+    const divOffY = divisors(Math.abs(offY));
     const commonDivisor = divOffX.some(nr => divOffY.indexOf(nr) > -1);
     const notDivisible = oneInvolved || !commonDivisor; //If they share a common divisor, the path they trace was already traced by smaller offsets before (I think) so we can ignore this.
-    const notDivisibleBetter = oneInvolved || (offX % offY !== 0 && offY % offX !== 0); //Appears to be more correct when looking at the output. Replace notDivisible with this to see the difference
-    const notEqual = offX !== offY;
+    const notEqual = Math.abs(offX) !== Math.abs(offY);
 
     /* 
      * So to sum up: We trace if
      * The values are both 1 or -1 OR
      * They do NOT share a common divisor AND are NOT equal
      */
-    if (onePair || (notDivisibleBetter && notEqual)) {
+    if (onePair || (notDivisible && notEqual)) {
         //While we are within the bounds of the map
         while ((x >= 0 && x < grid.length) && (y >= 0 && y < grid[x].length)) {
             //Increase the checked coordinates by the given offsets
@@ -85,14 +105,12 @@ const beam = (x, y, offX, offY, grid) => {
 
             //If there is an asteroid
             if (grid[x] && grid[x][y]) {
-                if (inX === 2 && inY === 5) //This was just for debugging and can be ignored mostly. I think x and y are flipped, sorry.
-                    console.log(`Found 'roid at ${x}:${y}! Started from ${inX}:${inY} with offsets ${offX}:${offY}`);
                 //Return true
-                return true;
+                return {hit: true, x, y};
             }
         }
     }
-    return false;
+    return {hit: false};
 }
 
 // Counts how many beams hit something from asteroid x/y
@@ -107,7 +125,7 @@ const beamCount = (x, y, grid) => {
     for (let i = 0; i < xOffsets.length; i++) {
         for (let j = 0; j < yOffsets.length; j++) {
             //Run a beam and see if it hit something
-            if (beam(x, y, xOffsets[i], yOffsets[j], grid)) {
+            if (beam(x, y, xOffsets[i], yOffsets[j], grid).hit) {
                 // If it did, add the coordinates as string to the prepared set.
                 hits.add(`${x+xOffsets[i]},${y+yOffsets[j]}`);
             }
@@ -131,8 +149,6 @@ const part1 = x => {
             if (grid[i][j]) {
                 //Get the count of beams that found another asteroid
                 const cCount = beamCount(i, j, grid);
-                if (i === 8 && j === 5) console.log(cCount); //Debug, can be ignored
-
                 // If the count is greater than the currently recorded max, update the result set.
                 if (cCount > cMax.max) cMax = {max: cCount, x: i, y: j};
             }
@@ -143,4 +159,54 @@ const part1 = x => {
     return cMax;
 }
 
-console.log(part1(test));
+const getBeamOffsets = (grid, xMlt, yMlt) => {
+    let xOffsets = [...Array(grid.length).keys()].map(x => x * xMlt);
+    let yOffsets = [...Array(grid[0].length).keys()].map(y => y * yMlt);
+    const oneNegative = Math.sign(xMlt * yMlt) === -1;
+
+/*    const sorter = oneNegative
+        ? ([topA, botA], [topB, botB]) => topA/botA - topB/botB
+        : ([topA, botA], [topB, botB]) => topB/botB - topA/botA;
+  */
+ const sorter = ([topA, botA], [topB, botB]) => topA/botA - topB/botB; 
+
+
+    if (oneNegative) {
+        xOffsets = xOffsets.filter(x => x);
+    } else {
+        yOffsets = yOffsets.filter(y => y);
+    }
+
+    return xOffsets.flatMap(d => yOffsets.map(v => [d, v])).sort(sorter);
+}
+
+const part2 = (input, x, y) => {
+    const grid = mapToGrid(input);
+    let lazored = 0;
+
+    const firstQ = getBeamOffsets(grid, -1, 1);
+    const secondQ = getBeamOffsets(grid, 1, 1);
+    const thirdQ = getBeamOffsets(grid, 1, -1);
+    const fourthQ = getBeamOffsets(grid, -1, -1);
+
+    const beamOffsets = [...firstQ, ...secondQ, ...thirdQ, ...fourthQ];
+
+    let offIndex = 0;
+
+    while (true) {
+        const offsets = beamOffsets[offIndex];
+        const fireResult = beam(x, y, offsets[0], offsets[1], grid);
+        if (fireResult.hit) {
+            grid[fireResult.x][fireResult.y] = false;
+            lazored++;
+
+        }
+
+        if (lazored === 200) return fireResult.y * 100 + fireResult.x;
+
+        offIndex = (offIndex + 1) % beamOffsets.length;
+    }
+}
+
+console.log(part1(input));
+console.log(part2(input, 23, 17));
